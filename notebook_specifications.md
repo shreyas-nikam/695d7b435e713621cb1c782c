@@ -1,144 +1,143 @@
 
-# Jupyter Notebook Specification: Building Robust Data Models for AI-Readiness Assessment
+# Building Enterprise AI Systems: Data Contracts for AI Readiness Assessment
 
-## 1. Introduction: Laying the Foundation for PE Org-AI-R Platform
+## Introduction: Architecting the PE Org-AI-R Platform
 
-**Persona:** Sarah, a Data Engineer at "PE Org-AI-R Platform".
+**Persona:** Alex, a Senior Software Engineer at PE Org-AI-R Platform.
+**Organization:** PE Org-AI-R Platform, a leading private equity firm specializing in identifying and nurturing AI-ready companies.
 
-**Organization:** PE Org-AI-R Platform, a new venture focused on providing private equity firms with advanced AI-readiness assessments for their portfolio and target companies. The platform aims to offer comprehensive scoring, sector-specific benchmarks, and actionable insights into a company's AI capabilities.
+Alex's mission is to build the foundational architecture for a new AI Readiness Assessment system. This system will evaluate potential portfolio companies across critical dimensions, providing data-driven insights for investment and value creation strategies. In the world of enterprise AI, "AI that lives in notebooks dies in production." Alex understands that success hinges on robust system architecture, clear data contracts, and disciplined engineering practices, not just sophisticated models.
 
-**Story + Context + Real-World Relevance:**
-Sarah's primary responsibility is to design and implement the robust data models that underpin the entire AI-readiness assessment system. Ensuring data integrity, consistency, and strict adherence to business rules is paramount for the platform's credibility and the accuracy of its insights. This notebook walks through Sarah's process of defining core entities, scoring inputs, and calibration parameters using Pydantic, a powerful data validation library. This work directly supports the platform's goal of delivering reliable AI-readiness scores to private equity clients.
+This notebook walks through Alex's initial steps to lay down the "platform skeleton" and define core data schemas using Pydantic, ensuring data integrity and setting the stage for future sprints. This is where "APIs and schemas act as contracts between teams and modules," a crucial step in preventing "data chaos" and "integration debt."
 
----
+## 1. Setting Up the Project Environment and Structure
 
-## 2. Installing Required Libraries
+Alex begins by preparing the development environment and establishing a standardized directory structure. This structure is vital for managing complexity in a growing enterprise AI system, separating concerns, and aligning with industry best practices for monorepos.
+
+### Installing Required Libraries
+
+Alex ensures all necessary libraries, particularly `pydantic` for data schema definition and `faker` for synthetic data generation, are installed.
 
 ```python
-!pip install pydantic pandas matplotlib seaborn Faker
+!pip install pydantic~=2.0 faker~=20.0 python-dotenv~=1.0 # Pydantic v2 requires ~2.0, faker for synthetic data, dotenv for env vars
 ```
 
----
+### Importing Required Dependencies
 
-## 3. Importing Required Dependencies
+Alex imports the core modules needed for defining schemas, handling data types, and generating unique identifiers and synthetic data.
 
 ```python
+import os
+import shutil
 from datetime import datetime, date
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import random
+from typing import Optional, List, Dict
+from uuid import uuid4
+
+from pydantic import BaseModel, Field, ValidationError, model_validator
 from faker import Faker
-
-fake = Faker()
 ```
 
----
+### Initializing the Monorepo Directory Structure
 
-## 4. Defining Core Business Entities: The Company Model
-
-### Story + Context + Real-World Relevance
-
-Sarah starts by defining the fundamental entity in the PE Org-AI-R Platform: the `Company`. This involves structuring essential company information and using Python `Enum` types to enforce categorical data, such as `CompanyStatus` and `OwnershipType`. By using Pydantic, she ensures that all company data ingested into the system will conform to predefined rules, preventing common data quality issues and facilitating consistent reporting.
-
-```latex
-The use of Pydantic's `BaseModel` for `Company` and `Field` for individual attributes ensures schema validation and data type enforcement. `Enum` types provide a finite set of allowed values, reducing ambiguity and errors in categorical fields.
-```
-
-### Code cell (function definition + function execution)
+A well-defined project structure is the backbone of any maintainable software system. Alex creates the logical separation for APIs, services, schemas, and other components.
 
 ```python
+# Function to create directories safely
+def create_project_structure(base_path: str = "src/pe_orgair"):
+    """
+    Creates the foundational directory structure for the PE Org-AI-R Platform monorepo.
+    """
+    print(f"Creating project structure under: {base_path}")
+
+    # Define core directories
+    core_dirs = [
+        f"{base_path}/api",
+        f"{base_path}/services",
+        f"{base_path}/schemas",
+        f"{base_path}/db",
+        f"{base_path}/pipelines",
+        f"{base_path}/config",
+        f"{base_path}/api/routes",
+        f"{base_path}/services/scoring",
+        f"{base_path}/services/extraction",
+        f"{base_path}/services/retrieval",
+        f"{base_path}/services/value_creation",
+        f"{base_path}/services/monitoring",
+        f"{base_path}/services/portfolio",
+        f"{base_path}/schemas/v1",
+        f"{base_path}/schemas/v1/exports", # For JSON schema exports
+        "tests/unit",
+        "tests/integration",
+        "tests/e2e",
+        "data/taxonomies",
+        "data/sector_calibrations",
+        "data/sample_companies",
+        "docs/api",
+        "docs/architecture",
+        "scripts",
+        "docker",
+        "dags", # For Apache Airflow DAGs
+    ]
+
+    for d in core_dirs:
+        os.makedirs(d, exist_ok=True)
+        # print(f"  Created: {d}")
+
+    # Initialize Python packages with __init__.py
+    python_packages = [
+        base_path,
+        f"{base_path}/api",
+        f"{base_path}/services",
+        f"{base_path}/schemas",
+        f"{base_path}/schemas/v1",
+        f"{base_path}/config",
+    ]
+    for p in python_packages:
+        init_file = os.path.join(p, "__init__.py")
+        if not os.path.exists(init_file):
+            with open(init_file, "w") as f:
+                pass # Create empty __init__.py
+            # print(f"  Created: {init_file}")
+
+    print("\nProject structure created successfully.")
+
+# Execute the function to create the structure
+project_root = "src/pe_orgair"
+if os.path.exists("src"): # Clean up previous run for idempotency
+    shutil.rmtree("src")
+create_project_structure(project_root)
+
+# Verify creation (optional, for demonstration)
+print("\nVerifying key directories:")
+print(f"Schema dir exists: {os.path.exists(f'{project_root}/schemas/v1')}")
+print(f"API routes dir exists: {os.path.exists(f'{project_root}/api/routes')}")
+```
+
+### Explanation of Execution
+Alex has now established the fundamental folder structure for the PE Org-AI-R platform. This adheres to the "separation of concerns" principle, which prevents failures in large systems by organizing code into distinct, manageable parts. This systematic initialization reduces "technical debt" from the outset, ensuring future development can proceed efficiently.
+
+## 2. Defining Core Data Schemas with Pydantic
+
+Alex moves on to defining the core data structures that will represent the entities within the AI Readiness Assessment system. Pydantic models are chosen for their ability to define clear data "contracts" (schemas) with built-in validation, which is critical for ensuring data quality across different system components and preventing "prototype purgatory."
+
+```python
+# Enums from the provided content
 class CompanyStatus(str, Enum):
-    """Enumeration for company status."""
+    """Possible statuses for a company."""
     ACTIVE = "active"
     INACTIVE = "inactive"
     ACQUIRED = "acquired"
     EXITED = "exited"
 
 class OwnershipType(str, Enum):
-    """Enumeration for company ownership type."""
+    """Types of ownership for a company."""
     PORTFOLIO = "portfolio"
     TARGET = "target"
     EXITED = "exited"
     BENCHMARK = "benchmark"
 
-class CompanyBase(BaseModel):
-    """Base company model with common fields."""
-    name: str = Field(..., min_length=1, max_length=200, description="Company's official name.")
-    ticker: Optional[str] = Field(None, max_length=20, description="Stock ticker symbol, if applicable.")
-    domain: Optional[str] = Field(None, max_length=200, description="Company's primary domain/website.")
-    cik: Optional[str] = Field(None, max_length=20, description="Central Index Key (CIK) for SEC filers.")
-    sector_id: str = Field(..., description="Reference to sector calibration identifier.")
-    sub_sector_id: Optional[str] = None
-
-class CompanyCreate(CompanyBase):
-    """Schema for creating a company."""
-    enterprise_value: Optional[Decimal] = Field(None, ge=0, description="Monetary value of the company.")
-    ev_currency: str = Field(default="USD", max_length=3, description="Currency of the enterprise value (e.g., 'USD').")
-    ev_as_of_date: Optional[date] = None
-    ownership_type: OwnershipType = OwnershipType.TARGET
-    fund_id: Optional[str] = None
-
-class Company(CompanyBase):
-    """Full company model with all fields, including system-generated ones."""
-    company_id: str = Field(..., description="Unique identifier for the company.")
-    enterprise_value: Optional[Decimal] = Field(None, ge=0)
-    ev_currency: str = Field(default="USD")
-    ev_as_of_date: Optional[date] = None
-    status: CompanyStatus = CompanyStatus.ACTIVE
-    ownership_type: Optional[OwnershipType] = None
-    fund_id: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
-
-# Example usage: Instantiate a valid Company object
-print("--- Valid Company Instance ---")
-try:
-    example_company = Company(
-        company_id="comp_001",
-        name="Tech Innovators Inc.",
-        ticker="TINV",
-        sector_id="tech_saas",
-        enterprise_value=Decimal("150000000.00"),
-        ownership_type=OwnershipType.PORTFOLIO,
-        created_at=datetime(2023, 1, 1, 10, 0, 0)
-    )
-    print(example_company.model_dump_json(indent=2))
-except ValidationError as e:
-    print(f"Error creating company: {e}")
-
-# Example usage: Demonstrate validation error for Company
-print("\n--- Invalid Company Instance (name too long) ---")
-try:
-    invalid_company = Company(
-        company_id="comp_002",
-        name="A very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very very extremely detailed, yet clear and concise, as if a domain expert is explaining to another. The technical aspects must be precise and actionable. This is not for beginners.
-
-**Goal:** Sarah needs to construct, validate, and generate synthetic data for these critical data models that will be consumed by other services within the PE Org-AI-R Platform.
-
----
-
-## 5. Capturing Dimension Scores: Input & Result Models
-
-### Story + Context + Real-World Relevance
-
-The core of the AI-readiness assessment involves scoring companies across several predefined dimensions (e.g., Data Infrastructure, AI Governance). Sarah must define models to handle these dimension scores effectively. This includes `DimensionName` (an Enum for the specific dimensions), `DimensionScoreInput` (for raw input scores), and `DimensionScoreResult` (for validated and processed scores).
-
-A key requirement for `DimensionScoreInput` is to ensure scores are within a valid range (0-100) and are rounded to two decimal places. This is crucial for maintaining numerical precision in downstream calculations. The `confidence_level` also needs validation to ensure it's one of 'high', 'medium', or 'low'.
-
-```latex
-The `DimensionScoreInput` model utilizes a custom `field_validator` to enforce a specific rounding rule for scores. The score value $s$ is rounded to two decimal places:
-$$ s_{rounded} = \text{round}(s, 2) $$
-Additionally, the score must satisfy $0 \le s \le 100$. The `confidence_level` field employs a regular expression pattern to restrict its values to 'high', 'medium', or 'low', denoted by $C \in \{\text{'high', 'medium', 'low'}\}$.
-```
-
-### Code cell (function definition + function execution)
-
-```python
 class DimensionName(str, Enum):
     """Seven validated dimensions of AI readiness."""
     DATA_INFRASTRUCTURE = "data_infrastructure"
@@ -149,122 +148,7 @@ class DimensionName(str, Enum):
     USE_CASE_PORTFOLIO = "use_case_portfolio"
     CULTURE = "culture"
 
-class DimensionScoreInput(BaseModel):
-    """Input for a single dimension score."""
-    dimension: DimensionName = Field(..., description="Name of the AI-readiness dimension.")
-    score: Decimal = Field(..., ge=0, le=100, description="Score for the dimension (0-100).")
-    confidence_level: Optional[str] = Field(
-        default="medium",
-        pattern="^(high|medium|low)$",
-        description="Confidence level of the score assessment."
-    )
-    rationale: Optional[str] = Field(None, max_length=1000, description="Brief explanation for the score.")
-    evidence_chunk_ids: List[str] = Field(default_factory=list, description="IDs of evidence chunks supporting the score.")
-
-    @field_validator('score', mode='before')
-    @classmethod
-    def round_score(cls, v: Any) -> Decimal:
-        """Scores should be rounded to 2 decimal places."""
-        if isinstance(v, (int, float)):
-            v = Decimal(str(v))
-        if not isinstance(v, Decimal):
-            raise ValueError("Score must be a number.")
-        return v.quantize(Decimal("0.01"))
-
-class DimensionScoreResult(BaseModel):
-    """Stored dimension score with metadata."""
-    score_id: str = Field(..., description="Unique identifier for the stored score.")
-    company_id: str = Field(..., description="ID of the company being scored.")
-    assessment_id: str = Field(..., description="ID of the overall assessment this score belongs to.")
-    dimension: DimensionName = Field(..., description="Name of the AI-readiness dimension.")
-    score: Decimal = Field(..., ge=0, le=100, description="Validated and rounded score for the dimension (0-100).")
-    weight: Decimal = Field(..., ge=0, le=1, description="Weight applied to this dimension in overall score calculation.")
-    confidence_level: str = Field(
-        pattern="^(high|medium|low)$",
-        description="Confidence level of the score assessment."
-    )
-    assessor_id: Optional[str] = None
-    assessment_method: str = Field(..., description="Method used for assessment (e.g., 'manual', 'automated').")
-    assessment_date: date = Field(..., description="Date of the assessment.")
-    evidence_count: int = Field(0, ge=0, description="Number of evidence pieces linked to this score.")
-    created_at: datetime = Field(default_factory=datetime.now)
-
-# Example usage: Valid DimensionScoreInput
-print("--- Valid DimensionScoreInput Instance ---")
-try:
-    valid_score_input = DimensionScoreInput(
-        dimension=DimensionName.DATA_INFRASTRUCTURE,
-        score=75.567, # Will be rounded to 75.57
-        confidence_level="high",
-        rationale="Strong data governance practices."
-    )
-    print(valid_score_input.model_dump_json(indent=2))
-except ValidationError as e:
-    print(f"Error creating score input: {e}")
-
-# Example usage: Invalid DimensionScoreInput (score out of bounds)
-print("\n--- Invalid DimensionScoreInput (score < 0) ---")
-try:
-    invalid_score_input_low = DimensionScoreInput(
-        dimension=DimensionName.TALENT,
-        score=-5,
-        confidence_level="medium"
-    )
-    print(invalid_score_input_low.model_dump_json(indent=2))
-except ValidationError as e:
-    print(f"Validation Error: {e}")
-
-print("\n--- Invalid DimensionScoreInput (confidence_level pattern mismatch) ---")
-try:
-    invalid_score_input_confidence = DimensionScoreInput(
-        dimension=DimensionName.CULTURE,
-        score=60,
-        confidence_level="very_high" # Invalid value
-    )
-    print(invalid_score_input_confidence.model_dump_json(indent=2))
-except ValidationError as e:
-    print(f"Validation Error: {e}")
-
-# Example usage: Valid DimensionScoreResult
-print("\n--- Valid DimensionScoreResult Instance ---")
-try:
-    valid_score_result = DimensionScoreResult(
-        score_id="score_123",
-        company_id="comp_001",
-        assessment_id="assess_abc",
-        dimension=DimensionName.AI_GOVERNANCE,
-        score=82.75,
-        weight=Decimal("0.20"),
-        confidence_level="high",
-        assessment_method="manual",
-        assessment_date=date(2023, 10, 26)
-    )
-    print(valid_score_result.model_dump_json(indent=2))
-except ValidationError as e:
-    print(f"Error creating score result: {e}")
-```
-
-### Markdown cell (explanation of execution)
-
-The output demonstrates successful instantiation of `DimensionScoreInput` and `DimensionScoreResult` objects when valid data is provided. Notably, the `round_score` validator automatically rounds `75.567` to `75.57`. The subsequent error messages illustrate how Pydantic's `ValidationError` catches invalid inputs, such as scores outside the `[0, 100]` range or `confidence_level` values that do not match the specified regex pattern. For Sarah, this robust validation ensures that only clean, well-formatted scores enter the system, which is critical for accurate AI-readiness calculations and preventing upstream data processing errors.
-
----
-
-## 6. Tailoring to Sectors: The Sector Calibration Model
-
-### Story + Context + Real-World Relevance
-
-AI-readiness is not a one-size-fits-all metric. Different sectors might have varying baselines, risk profiles, and most importantly, different weightings for each AI dimension. For instance, "Data Infrastructure" might be more critical for a FinTech company than for a Media company. Sarah needs to define the `SectorCalibration` model to capture these sector-specific adjustments. This model must include a robust validator to ensure that the sum of dimension weights for any given sector always totals 1.0, reflecting a complete and accurate distribution of importance across dimensions. This is a fundamental constraint for any weighted scoring model.
-
-```latex
-The `SectorCalibration` model includes a critical `model_validator` that checks the sum of dimension weights. Let $w_d$ be the weight for a dimension $d \in DimensionName$. The validator ensures that the sum of all weights equals 1.0, with a tolerance for floating-point inaccuracies:
-$$ \left| \sum_{d \in DimensionName} w_d - 1.0 \right| \le 0.001 $$
-If this condition is not met, a `ValueError` is raised. The `h_r_baseline`, `h_r_ci_lower`, and `h_r_ci_upper` fields represent the baseline Systematic Opportunity (H^R) and its confidence interval for a given sector, and must satisfy $0 \le \text{value} \le 100$.
-```
-
-### Code cell (function definition + function execution)
-
-```python
+# Default dimension weights (can be overridden by sector)
 DEFAULT_WEIGHTS: Dict[DimensionName, Decimal] = {
     DimensionName.DATA_INFRASTRUCTURE: Decimal("0.25"),
     DimensionName.AI_GOVERNANCE: Decimal("0.20"),
@@ -275,402 +159,354 @@ DEFAULT_WEIGHTS: Dict[DimensionName, Decimal] = {
     DimensionName.CULTURE: Decimal("0.05"),
 }
 
+# Company-related schemas
+class CompanyBase(BaseModel):
+    """Base company model, defining common fields."""
+    name: str = Field(..., min_length=1, max_length=200)
+    ticker: Optional[str] = Field(None, max_length=20)
+    domain: Optional[str] = Field(None, max_length=200)
+    cik: Optional[str] = Field(None, max_length=20)
+    sector_id: str = Field(..., description="Reference to sector calibration")
+    sub_sector_id: Optional[str] = None
+
+class CompanyCreate(CompanyBase):
+    """Schema for creating a company, including optional initial financial details."""
+    enterprise_value: Optional[Decimal] = Field(None, ge=0)
+    ev_currency: str = Field(default="USD", max_length=3)
+    ev_as_of_date: Optional[date] = None
+    ownership_type: OwnershipType = OwnershipType.TARGET
+    fund_id: Optional[str] = None
+
+class Company(CompanyBase):
+    """Full company model with all fields, including system-generated ones."""
+    company_id: str = Field(default_factory=lambda: str(uuid4()))
+    enterprise_value: Optional[Decimal] = Field(None, ge=0) # Redundant but kept from source
+    ev_currency: str = Field("USD", max_length=3) # Redundant but kept from source
+    ev_as_of_date: Optional[date] = None # Redundant but kept from source
+    status: CompanyStatus = CompanyStatus.ACTIVE
+    ownership_type: Optional[OwnershipType] = None # Optional here to allow for updates to existing
+    fund_id: Optional[str] = None # Optional here to allow for updates to existing
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Config:
+        from_attributes = True # Allow creating model instances from ORM objects
+
+class CompanyDetail(Company):
+    """Company with related data for detail view."""
+    sector_name: Optional[str] = None
+    current_org_air: Optional[Decimal] = None
+    last_scored_at: Optional[datetime] = None
+    document_count: int = 0
+    job_signal_count: int = 0
+
+# Dimension and scoring schemas
+class DimensionScoreInput(BaseModel):
+    """Input for a single dimension score, subject to validation."""
+    dimension: DimensionName
+    score: Decimal = Field(..., ge=0, le=100)
+    confidence_level: Optional[str] = Field(
+        default="medium", pattern="^(high|medium|low)$"
+    )
+    rationale: Optional[str] = Field(None, max_length=1000)
+    evidence_chunk_ids: List[str] = Field(default_factory=list)
+
+    @model_validator(mode='before')
+    @classmethod
+    def round_score(cls, values):
+        if isinstance(values, dict) and 'score' in values and isinstance(values['score'], (float, Decimal)):
+            values['score'] = Decimal(values['score']).quantize(Decimal("0.01"))
+        return values
+
+class DimensionScoreResult(BaseModel):
+    """Stored dimension score with metadata for historical tracking."""
+    score_id: str = Field(default_factory=lambda: str(uuid4()))
+    company_id: str
+    assessment_id: str = Field(default_factory=lambda: str(uuid4()))
+    dimension: DimensionName
+    score: Decimal = Field(..., ge=0, le=100)
+    weight: Decimal = Field(..., ge=0, le=1) # Dimension weights
+    confidence_level: str
+    assessor_id: Optional[str] = None
+    assessment_method: str
+    assessment_date: date
+    evidence_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class SectorCalibration(BaseModel):
-    """Sector calibration data including H^R and dimension weights."""
-    sector_id: str = Field(..., description="Unique identifier for the sector.")
-    sector_name: str = Field(..., description="Human-readable name of the sector.")
-    
-    # Systematic Opportunity (H^R)
-    h_r_baseline: Decimal = Field(..., ge=0, le=100, description="Baseline Systematic Opportunity (H^R) score for the sector.")
-    h_r_ci_lower: Optional[Decimal] = Field(None, ge=0, le=100, description="Lower bound of the H^R confidence interval.")
-    h_r_ci_upper: Optional[Decimal] = Field(None, ge=0, le=100, description="Upper bound of the H^R confidence interval.")
-    
-    # Dimension weights
-    weights: Dict[DimensionName, Decimal] = Field(
-        default_factory=lambda: DEFAULT_WEIGHTS,
-        description="Weights for each dimension, summing to 1.0."
-    )
-    
-    # Sector targets (75th percentile benchmarks)
-    targets: Dict[DimensionName, Decimal] = Field(
-        default_factory=lambda: {d: Decimal("75.00") for d in DimensionName},
-        description="75th percentile benchmark scores for each dimension in this sector."
-    )
-    effective_date: date = Field(..., description="Date from which this calibration is effective.")
+    """Sector calibration data including Human-Readiness (H^R) and dimension weights."""
+    sector_id: str
+    sector_name: str
+    h_r_baseline: Decimal = Field(..., ge=0, le=100, description="Systematic Opportunity (H^R) baseline score")
+    h_r_ci_lower: Optional[Decimal] = Field(None, ge=0, le=100, description="Lower bound of H^R confidence interval")
+    h_r_ci_upper: Optional[Decimal] = Field(None, ge=0, le=100, description="Upper bound of H^R confidence interval")
+    weights: Dict[DimensionName, Decimal] = Field(..., description="Weights for each dimension, must sum to 1.0")
+    targets: Dict[DimensionName, Decimal] = Field(..., description="Sector targets (75th percentile benchmarks)")
+    effective_date: date
 
     @model_validator(mode='after')
     def validate_weights_sum(self) -> 'SectorCalibration':
-        """Dimension weights must sum to 1.0."""
-        total = sum(self.weights.values())
-        if abs(total - Decimal("1.0")) > Decimal("0.001"):
-            raise ValueError(f"Dimension weights must sum to 1.0, got {total}")
+        """
+        Ensures that the sum of dimension weights equals 1.0.
+        This is a critical business rule for consistent scoring.
+        """
+        total_weights = sum(self.weights.values())
+        # Check if total_weights is approximately 1.0 to account for floating-point inaccuracies
+        if abs(total_weights - Decimal("1.0")) > Decimal("0.001"):
+            raise ValueError(f"Dimension weights must sum to 1.0, got {total_weights}")
         return self
 
-# Example usage: Valid SectorCalibration
-print("--- Valid SectorCalibration Instance (with default weights) ---")
-try:
-    valid_calibration = SectorCalibration(
-        sector_id="tech_saas",
-        sector_name="Technology - SaaS",
-        h_r_baseline=Decimal("70.5"),
-        h_r_ci_lower=Decimal("65.0"),
-        h_r_ci_upper=Decimal("76.0"),
-        effective_date=date(2023, 1, 1)
-    )
-    print(f"Weights sum for valid_calibration: {sum(valid_calibration.weights.values()):.2f}")
-    print(valid_calibration.model_dump_json(indent=2))
-except ValidationError as e:
-    print(f"Error creating valid calibration: {e}")
+    class Config:
+        from_attributes = True
 
-# Example usage: Invalid SectorCalibration (weights do not sum to 1.0)
-print("\n--- Invalid SectorCalibration (weights sum != 1.0) ---")
-try:
-    bad_weights = {d: Decimal("0.10") for d in DimensionName} # Sums to 0.70
-    invalid_calibration_weights = SectorCalibration(
-        sector_id="retail_ecommerce",
-        sector_name="Retail - E-commerce",
-        h_r_baseline=Decimal("60.0"),
-        weights=bad_weights,
-        effective_date=date(2023, 3, 1)
-    )
-    print(invalid_calibration_weights.model_dump_json(indent=2))
-except ValidationError as e:
-    print(f"Validation Error: {e}")
-
-# Example usage: Invalid SectorCalibration (H^R baseline out of bounds)
-print("\n--- Invalid SectorCalibration (H^R baseline > 100) ---")
-try:
-    invalid_calibration_hr = SectorCalibration(
-        sector_id="healthcare_biotech",
-        sector_name="Healthcare - Biotech",
-        h_r_baseline=Decimal("110.0"), # Invalid baseline
-        effective_date=date(2023, 6, 1)
-    )
-    print(invalid_calibration_hr.model_dump_json(indent=2))
-except ValidationError as e:
-    print(f"Validation Error: {e}")
+print("Pydantic models for PE Org-AI-R Platform defined.")
+print("\nDEFAULT_WEIGHTS for dimensions:")
+for dim, weight in DEFAULT_WEIGHTS.items():
+    print(f"  - {dim.value}: {weight}")
 ```
 
-### Markdown cell (explanation of execution)
+### Explanation of Execution
+Alex has now meticulously defined the data blueprints for the AI Readiness system. Each `BaseModel` specifies the expected data types, required fields, and intricate validation rules using `Field` parameters like `min_length`, `max_length`, `ge` (greater than or equal to), `le` (less than or equal to), and `pattern`. The `DimensionName` `Enum` ensures that all dimensions are consistently named, preventing "data chaos" from inconsistent spellings. The `SectorCalibration` model includes a `@model_validator` to enforce a critical business rule: **the sum of dimension weights must be 1.0**. This is mathematically represented as:
 
-The execution clearly demonstrates the `validate_weights_sum` validator in action. The first example shows a `SectorCalibration` instance successfully created using the `DEFAULT_WEIGHTS` which correctly sum to 1.0. The output confirms the sum of weights is `1.00`. The second example, where custom `bad_weights` sum to `0.70`, results in a `ValidationError` with a clear message, confirming the model's enforcement of the crucial sum-to-one constraint. The third example validates the bounds of `h_r_baseline`. This strict validation prevents erroneous weighting schemas from affecting the overall AI-readiness calculations, ensuring that the platform's sector-specific insights are always based on sound mathematical principles.
+$$
+\sum_{i=1}^{N} w_i = 1.0
+$$
 
----
+where $w_i$ is the weight for the $i$-th `DimensionName`, and $N$ is the total number of dimensions. This validation ensures that the scoring mechanism remains consistent and fair across different sectors. This explicit contract helps avoid "misalignment between data science and operations" by setting clear expectations for data input.
 
-## 7. Data Generation and Validation in Practice
+## 3. Enforcing Data Integrity through Schema Validation
 
-### Story + Context + Real-World Relevance
+A key benefit of Pydantic is its automatic data validation, which is paramount for an enterprise AI system. Alex demonstrates how this prevents invalid or malformed data from corrupting the system, which is a common cause of "AI failure."
 
-With the core Pydantic models defined and validated, Sarah's next step is to demonstrate their real-world application by generating synthetic data. This isn't just for testing; in a development cycle, synthetic data is vital for populating development environments, stress-testing new features, and creating realistic scenarios for analytics and reporting without relying on sensitive production data. She will generate data for `Company` entities, `DimensionScoreInput` records, and `SectorCalibration` profiles, showcasing both successful data instantiation and explicit handling of validation errors when malformed data is intentionally introduced.
+### 3.1 Valid Data Instantiation
 
-```latex
-Synthetic data generation allows for systematic testing of Pydantic models. For a given Pydantic model $M$, a set of synthetic instances $I = \{m_1, m_2, \ldots, m_k\}$ is generated. Each $m_i$ is then validated against $M$. The process includes:
-1. Generating valid data to confirm successful parsing: $m_i = M(\text{valid\_data})$.
-2. Generating invalid data to confirm error handling: $M(\text{invalid\_data}) \implies \text{ValidationError}$.
-```
-
-### Code cell (function definition + function execution)
+Alex first shows how to create model instances with valid data, demonstrating successful adherence to the defined schemas.
 
 ```python
-# Helper function to generate a random Decimal score
-def generate_random_decimal_score(min_val: int = 0, max_val: int = 100) -> Decimal:
-    return Decimal(str(round(random.uniform(min_val, max_val), 2)))
+print("--- Valid Data Instantiation ---")
 
-# Generate synthetic Company data
-def generate_companies(num_companies: int) -> List[Company]:
-    companies = []
-    for i in range(num_companies):
-        company_id = f"comp_{i:03d}"
-        name = fake.company()
-        ticker = fake.bothify(text='???###', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-        domain = fake.domain_name()
-        sector_id = random.choice(["tech_saas", "fintech", "healthcare_biotech", "manufacturing", "retail_ecommerce"])
-        ownership_type = random.choice(list(OwnershipType))
-        status = random.choice(list(CompanyStatus))
-        created_at = fake.date_time_between(start_date="-2y", end_date="now")
-        updated_at = fake.date_time_between(start_date=created_at, end_date="now")
-        
-        try:
-            company = Company(
-                company_id=company_id,
-                name=name,
-                ticker=ticker,
-                domain=domain,
-                sector_id=sector_id,
-                enterprise_value=Decimal(str(round(random.uniform(1_000_000, 1_000_000_000), 2))),
-                ownership_type=ownership_type,
-                status=status,
-                created_at=created_at,
-                updated_at=updated_at
-            )
-            companies.append(company)
-        except ValidationError as e:
-            print(f"Failed to generate company {company_id}: {e}")
-    return companies
+# Example 1: Valid DimensionScoreInput
+valid_score_input = DimensionScoreInput(
+    dimension=DimensionName.DATA_INFRASTRUCTURE,
+    score=Decimal("85.50"),
+    confidence_level="high",
+    rationale="Strong data pipeline and governance policies observed.",
+    evidence_chunk_ids=["ev_id_001", "ev_id_002"]
+)
+print(f"\nSuccessfully created valid DimensionScoreInput:\n{valid_score_input.model_dump_json(indent=2)}")
 
-# Generate synthetic DimensionScoreInput data
-def generate_dimension_score_inputs(companies: List[Company], num_scores_per_company: int) -> List[DimensionScoreInput]:
-    score_inputs = []
-    for company in companies:
-        for _ in range(num_scores_per_company):
-            dimension = random.choice(list(DimensionName))
-            score = generate_random_decimal_score()
-            confidence_level = random.choice(["high", "medium", "low"])
-            
-            try:
-                score_input = DimensionScoreInput(
-                    dimension=dimension,
-                    score=score,
-                    confidence_level=confidence_level,
-                    rationale=fake.sentence(),
-                    evidence_chunk_ids=[fake.uuid4() for _ in range(random.randint(0, 3))]
-                )
-                score_inputs.append(score_input)
-            except ValidationError as e:
-                print(f"Failed to generate score for {company.company_id}, dimension {dimension}: {e}")
-    return score_inputs
+# Example 2: Valid CompanyCreate
+valid_company_create = CompanyCreate(
+    name="InnovateAI Solutions",
+    ticker="IAS",
+    domain="innovateai.com",
+    sector_id="tech_ai",
+    enterprise_value=Decimal("120000000.50"),
+    ev_currency="USD",
+    ev_as_of_date=date(2023, 11, 15),
+    ownership_type=OwnershipType.TARGET
+)
+print(f"\nSuccessfully created valid CompanyCreate:\n{valid_company_create.model_dump_json(indent=2)}")
 
-# Generate synthetic SectorCalibration data
-def generate_sector_calibrations(sector_ids: List[str]) -> List[SectorCalibration]:
-    calibrations = []
-    for sector_id in sector_ids:
-        sector_name = sector_id.replace("_", " ").title() # Simple conversion
-        h_r_baseline = generate_random_decimal_score(min_val=50, max_val=85)
-        h_r_ci_lower = h_r_baseline - generate_random_decimal_score(min_val=5, max_val=10)
-        h_r_ci_upper = h_r_baseline + generate_random_decimal_score(min_val=5, max_val=10)
-        effective_date = fake.date_this_year()
+# Example 3: Valid SectorCalibration with DEFAULT_WEIGHTS
+valid_sector_calibration = SectorCalibration(
+    sector_id="tech_ai",
+    sector_name="Technology & AI",
+    h_r_baseline=Decimal("78.0"),
+    h_r_ci_lower=Decimal("70.0"),
+    h_r_ci_upper=Decimal("85.0"),
+    weights=DEFAULT_WEIGHTS,
+    targets={dim: Decimal("75.0") for dim in DimensionName},
+    effective_date=date(2024, 1, 1)
+)
+print(f"\nSuccessfully created valid SectorCalibration:\n{valid_sector_calibration.model_dump_json(indent=2)}")
+```
 
-        # Randomly vary weights for some sectors to ensure validation
-        weights_sum = Decimal("0.0")
-        sector_weights = {}
-        # Ensure weights sum to 1.0 (with slight variation for testing validation)
-        for dim in DimensionName:
-            sector_weights[dim] = generate_random_decimal_score(min_val=0, max_val=30)
-            weights_sum += sector_weights[dim]
-        
-        # Normalize weights to sum to 1.0, or create invalid ones for testing
-        if random.random() < 0.2: # 20% chance to create invalid weights
-            # Intentionally make weights not sum to 1.0
-            pass 
-        else:
-            if weights_sum != Decimal("0.0"):
-                factor = Decimal("1.0") / weights_sum
-                sector_weights = {dim: w * factor for dim, w in sector_weights.items()}
-            else: # All weights were zero, assign default
-                sector_weights = DEFAULT_WEIGHTS
+### Explanation of Execution
+These examples demonstrate Pydantic's seamless validation. Alex can confidently use these models as "inputs" to other parts of the system, knowing that the data adheres to the specified structure and constraints. This is a direct application of using "APIs and schemas as contracts" to ensure internal consistency and reliability. The `score` field is automatically rounded to two decimal places as specified by the `round_score` validator, demonstrating automated data cleaning.
 
-        try:
-            calibration = SectorCalibration(
-                sector_id=sector_id,
-                sector_name=sector_name,
-                h_r_baseline=h_r_baseline,
-                h_r_ci_lower=h_r_ci_lower.quantize(Decimal("0.01")),
-                h_r_ci_upper=h_r_ci_upper.quantize(Decimal("0.01")),
-                weights=sector_weights,
-                effective_date=effective_date
-            )
-            calibrations.append(calibration)
-        except ValidationError as e:
-            print(f"Failed to generate calibration for sector {sector_id}: {e}")
-    return calibrations
+### 3.2 Demonstrating Validation Errors
 
-# Execute data generation
-num_companies_to_generate = 10
-num_scores_per_company = 5
-unique_sector_ids = ["tech_saas", "fintech", "healthcare_biotech", "manufacturing", "retail_ecommerce"]
+Now, Alex intentionally introduces invalid data to showcase Pydantic's error handling. This is critical for robust system design, as it ensures that "brittle orchestration" and data-related bugs are caught early.
 
-generated_companies = generate_companies(num_companies_to_generate)
-generated_score_inputs = generate_dimension_score_inputs(generated_companies, num_scores_per_company)
-generated_sector_calibrations = generate_sector_calibrations(unique_sector_ids)
+```python
+print("\n--- Demonstrating Validation Errors ---")
 
-print(f"\nGenerated {len(generated_companies)} companies.")
-print(f"Generated {len(generated_score_inputs)} dimension score inputs.")
-print(f"Generated {len(generated_sector_calibrations)} sector calibrations.")
-
-# Demonstrate an explicit ValidationError with invalid data for Company
-print("\n--- Explicit Validation Error Demonstration (Company) ---")
+# Invalid DimensionScoreInput: Score out of bounds
 try:
-    Company(
-        company_id="invalid_comp",
-        name="", # Invalid: min_length=1
-        sector_id="valid_sector",
-        enterprise_value=Decimal("-100") # Invalid: ge=0
+    invalid_score_input_score = DimensionScoreInput(
+        dimension=DimensionName.TALENT,
+        score=Decimal("101.0"), # Invalid: score > 100
+        confidence_level="medium"
     )
 except ValidationError as e:
-    print("Caught expected ValidationError for invalid Company data:")
-    for error in e.errors():
-        print(f"  Field: {error.get('loc')}, Message: {error.get('msg')}")
+    print(f"\nCaught expected ValidationError for invalid score:\n{e}")
+    # Alex checks for specific error detail to confirm the validation rule
+    assert "less than or equal to 100" in str(e)
 
-# Demonstrate an explicit ValidationError with invalid data for DimensionScoreInput
-print("\n--- Explicit Validation Error Demonstration (DimensionScoreInput) ---")
+# Invalid DimensionScoreInput: Invalid confidence_level pattern
 try:
-    DimensionScoreInput(
-        dimension=DimensionName.CULTURE,
-        score=150, # Invalid: le=100
-        confidence_level="unknown" # Invalid pattern
+    invalid_score_input_confidence = DimensionScoreInput(
+        dimension=DimensionName.LEADERSHIP,
+        score=Decimal("65.0"),
+        confidence_level="very_high" # Invalid: does not match pattern
     )
 except ValidationError as e:
-    print("Caught expected ValidationError for invalid DimensionScoreInput data:")
-    for error in e.errors():
-        print(f"  Field: {error.get('loc')}, Message: {error.get('msg')}")
+    print(f"\nCaught expected ValidationError for invalid confidence_level:\n{e}")
+    assert "string does not match regex" in str(e)
 
-# Demonstrate an explicit ValidationError with invalid data for SectorCalibration
-print("\n--- Explicit Validation Error Demonstration (SectorCalibration) ---")
+# Invalid SectorCalibration: Weights do not sum to 1.0
+bad_weights = {dim: Decimal("0.10") for dim in DimensionName} # Sums to 0.70 (7 dimensions * 0.10)
 try:
-    SectorCalibration(
-        sector_id="test_sector_invalid_weights",
-        sector_name="Test Invalid",
-        h_r_baseline=Decimal("70.0"),
-        weights={dim: Decimal("0.10") for dim in DimensionName}, # Sums to 0.70
+    invalid_sector_calibration_weights = SectorCalibration(
+        sector_id="finance",
+        sector_name="Financial Services",
+        h_r_baseline=Decimal("60.0"),
+        weights=bad_weights, # Invalid: sum != 1.0
+        targets={dim: Decimal("65.0") for dim in DimensionName},
         effective_date=date(2024, 1, 1)
     )
 except ValidationError as e:
-    print("Caught expected ValidationError for invalid SectorCalibration data (weights):")
-    for error in e.errors():
-        print(f"  Field: {error.get('loc')}, Message: {error.get('msg')}")
+    print(f"\nCaught expected ValidationError for weights sum:\n{e}")
+    assert "Dimension weights must sum to 1.0" in str(e)
+
+# Invalid SectorCalibration: h_r_baseline out of bounds
+try:
+    invalid_sector_calibration_baseline = SectorCalibration(
+        sector_id="healthcare",
+        sector_name="Healthcare",
+        h_r_baseline=Decimal("105.0"), # Invalid: baseline > 100
+        weights=DEFAULT_WEIGHTS,
+        targets={dim: Decimal("70.0") for dim in DimensionName},
+        effective_date=date(2024, 1, 1)
+    )
+except ValidationError as e:
+    print(f"\nCaught expected ValidationError for h_r_baseline:\n{e}")
+    assert "less than or equal to 100" in str(e)
 ```
 
-### Markdown cell (explanation of execution)
+### Explanation of Execution
+By demonstrating how `ValidationError` exceptions are raised, Alex confirms that Pydantic effectively acts as a gatekeeper for data quality. This proactive approach helps prevent "ML technical debt" that arises from inconsistent or invalid inputs further down the pipeline. When an analyst tries to input a score of `101.0`, or define sector weights that don't add up to 1.0, the system immediately flags the issue, guiding the user to correct the data. This ensures that the system's "inputs" are always reliable.
 
-The synthetic data generation functions successfully create lists of valid `Company`, `DimensionScoreInput`, and `SectorCalibration` objects. The output confirms the number of generated instances for each model. More importantly, the explicit error demonstrations showcase how Sarah's Pydantic models effectively catch invalid data. For example, trying to create a `Company` with an empty name or negative enterprise value, a `DimensionScoreInput` with a score above 100 or an invalid confidence level, or a `SectorCalibration` with weights that don't sum to 1.0 (within tolerance), all correctly raise `ValidationError` with specific error messages. This granular error reporting is invaluable for debugging data pipelines and ensuring that data quality gates are enforced rigorously.
+## 4. Generating Formal Data Contracts (JSON Schemas)
 
----
-
-## 8. Exploring the AI-Readiness Data Landscape
-
-### Story + Context + Real-World Relevance
-
-After generating and validating the foundational data, Sarah needs to provide initial insights into this data. Visualizations are key for understanding distributions, identifying potential biases, and quickly verifying that the generated synthetic data (and by extension, future real data) behaves as expected. For instance, visualizing the distribution of dimension scores helps confirm if the assessment system is producing a reasonable range of values. Plotting dimension weights across sectors offers a direct way to compare calibration strategies and ensure they align with business expectations. This step is crucial for Sarah to communicate her data model's implications to analysts and business stakeholders.
-
-```latex
-Visualizations aid in understanding the statistical properties of the generated data.
-1. Histograms illustrate the distribution of scores: $P(S=s)$.
-2. Bar charts compare dimension weights across sectors: $w_d(\text{sector})$.
-3. Line plots show sector baselines and confidence intervals: $(H_{R_{baseline}}, H_{R_{CI_{lower}}}, H_{R_{CI_{upper}}})(\text{sector})$.
-```
-
-### Code cell (function definition + function execution)
+Alex recognizes that sharing data structures across different services, frontend applications, and external partners requires a universally understood format. Generating JSON Schema from Pydantic models provides formal, language-agnostic "contracts" that empower "contract-first development."
 
 ```python
-# Convert generated Company data to a Pandas DataFrame for summary and visualization
-def companies_to_dataframe(companies: List[Company]) -> pd.DataFrame:
-    data = [c.model_dump() for c in companies]
-    df = pd.DataFrame(data)
-    # Ensure Decimal columns are converted to float for plotting if necessary, handle NaNs
-    for col in ['enterprise_value']:
-        if col in df.columns:
-            df[col] = df[col].apply(lambda x: float(x) if x is not None else x)
-    return df
+print("--- Generating JSON Schemas ---")
 
-# Convert generated DimensionScoreInput data to a Pandas DataFrame
-def score_inputs_to_dataframe(score_inputs: List[DimensionScoreInput]) -> pd.DataFrame:
-    data = [s.model_dump() for s in score_inputs]
-    df = pd.DataFrame(data)
-    df['score'] = df['score'].astype(float) # Convert Decimal to float for plotting
-    return df
+# Generate JSON Schema for Company model
+company_json_schema = Company.model_json_schema()
+print("\nJSON Schema for Company:\n")
+print(company_json_schema.model_dump_json(indent=2))
 
-# Convert generated SectorCalibration data to a Pandas DataFrame
-def sector_calibrations_to_dataframe(calibrations: List[SectorCalibration]) -> pd.DataFrame:
-    data = []
-    for c in calibrations:
-        entry = c.model_dump()
-        entry['weights_sum'] = sum(c.weights.values()) # Add weights sum for verification
-        # Flatten weights and targets for easier plotting
-        for dim_name, weight_val in c.weights.items():
-            entry[f'weight_{dim_name.value}'] = float(weight_val)
-        for dim_name, target_val in c.targets.items():
-            entry[f'target_{dim_name.value}'] = float(target_val)
-        
-        # Convert Decimal fields to float for plotting
-        for field in ['h_r_baseline', 'h_r_ci_lower', 'h_r_ci_upper']:
-            if field in entry and entry[field] is not None:
-                entry[field] = float(entry[field])
+# Generate JSON Schema for DimensionScoreInput model
+dimension_score_input_json_schema = DimensionScoreInput.model_json_schema()
+print("\nJSON Schema for DimensionScoreInput:\n")
+print(dimension_score_input_json_schema.model_dump_json(indent=2))
 
-        data.append(entry)
-    df = pd.DataFrame(data)
-    return df
+# Generate JSON Schema for SectorCalibration model
+sector_calibration_json_schema = SectorCalibration.model_json_schema()
+print("\nJSON Schema for SectorCalibration:\n")
+print(sector_calibration_json_schema.model_dump_json(indent=2))
 
-
-# Execute conversion to DataFrames
-companies_df = companies_to_dataframe(generated_companies)
-score_inputs_df = score_inputs_to_dataframe(generated_score_inputs)
-sector_calibrations_df = sector_calibrations_to_dataframe(generated_sector_calibrations)
-
-print("--- Summary of Generated Company Data ---")
-print(companies_df.head())
-print("\n--- Summary of Generated Dimension Scores ---")
-print(score_inputs_df.head())
-print("\n--- Summary of Generated Sector Calibrations ---")
-print(sector_calibrations_df.head())
-
-# Visualization 1: Distribution of Enterprise Values
-plt.figure(figsize=(10, 6))
-sns.histplot(companies_df['enterprise_value'], kde=True, bins=10)
-plt.title('Distribution of Company Enterprise Values')
-plt.xlabel('Enterprise Value (Log Scale)')
-plt.ylabel('Number of Companies')
-plt.xscale('log') # Use log scale due to potential wide range
-plt.grid(True, which="both", ls="--", c='0.7')
-plt.show()
-
-# Visualization 2: Distribution of Dimension Scores
-plt.figure(figsize=(12, 7))
-sns.histplot(score_inputs_df, x='score', hue='dimension', multiple='stack', bins=20, palette='viridis')
-plt.title('Distribution of Dimension Scores by Dimension Name')
-plt.xlabel('Score (0-100)')
-plt.ylabel('Count')
-plt.grid(True, which="both", ls="--", c='0.7')
-plt.legend(title='Dimension', bbox_to_anchor=(1.05, 1), loc='upper left')
-plt.tight_layout()
-plt.show()
-
-# Visualization 3: Dimension Weights Across Sectors
-weights_data = []
-for index, row in sector_calibrations_df.iterrows():
-    for dim in DimensionName:
-        weight_col = f'weight_{dim.value}'
-        if weight_col in row:
-            weights_data.append({
-                'sector_name': row['sector_name'],
-                'dimension': dim.value,
-                'weight': row[weight_col]
-            })
-weights_df = pd.DataFrame(weights_data)
-
-plt.figure(figsize=(14, 8))
-sns.barplot(data=weights_df, x='dimension', y='weight', hue='sector_name', palette='tab10')
-plt.title('Dimension Weights Across Different Sectors')
-plt.xlabel('AI-Readiness Dimension')
-plt.ylabel('Weight')
-plt.xticks(rotation=45, ha='right')
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.legend(title='Sector', bbox_to_anchor=(1.05, 1), loc='upper left')
-plt.tight_layout()
-plt.show()
-
-# Visualization 4: H^R Baseline and Confidence Interval for Sectors
-hr_cols = ['sector_name', 'h_r_baseline', 'h_r_ci_lower', 'h_r_ci_upper']
-hr_df = sector_calibrations_df[hr_cols].set_index('sector_name').dropna()
-
-plt.figure(figsize=(12, 7))
-hr_df[['h_r_baseline', 'h_r_ci_lower', 'h_r_ci_upper']].plot(kind='bar', figsize=(12,7), ax=plt.gca(), width=0.8)
-plt.errorbar(
-    x=range(len(hr_df)),
-    y=hr_df['h_r_baseline'],
-    yerr=[hr_df['h_r_baseline'] - hr_df['h_r_ci_lower'], hr_df['h_r_ci_upper'] - hr_df['h_r_baseline']],
-    fmt='none', capsize=5, color='black', label='CI Range'
-)
-plt.title('H^R Baseline and Confidence Interval by Sector')
-plt.xlabel('Sector Name')
-plt.ylabel('Score (0-100)')
-plt.xticks(rotation=45, ha='right')
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.legend()
-plt.tight_layout()
-plt.show()
+# Save a schema to the designated exports directory
+schema_export_path = f"{project_root}/schemas/v1/exports/company_v1.json"
+with open(schema_export_path, "w") as f:
+    f.write(company_json_schema.model_dump_json(indent=2))
+print(f"\nJSON Schema for Company exported to: {schema_export_path}")
 ```
 
-### Markdown cell (explanation of execution)
+### Explanation of Execution
+Alex has now generated a standardized, machine-readable JSON Schema for each critical entity. This output explicitly defines the structure, data types, and validation rules in a format that any programming language or system can interpret. For instance, a frontend developer can use the `company_json_schema` to dynamically generate forms or validate user input client-side, ensuring alignment with the backend API. This proactive step reinforces the idea of "APIs and schemas as contracts," minimizing miscommunication and integration issues across teams, a common pitfall leading to "data chaos."
 
-The visualizations provide immediate, actionable insights into the structured data. The histograms of `Enterprise Value` and `Dimension Scores` confirm the ranges and distributions are reasonable for synthetic data. The `Dimension Weights Across Different Sectors` bar chart allows Sarah to visually inspect if sector-specific weighting strategies are distinct and sum up correctly (though individual bars only show weights, the underlying data was validated to sum to 1.0). Finally, the `H^R Baseline and Confidence Interval by Sector` plot clearly displays the sector-specific systematic opportunity benchmarks, highlighting both the central tendency and the uncertainty range for each sector. For Sarah and her team, these plots are vital for sanity-checking the data generation process, validating the impact of calibration parameters, and quickly communicating key data characteristics to non-technical stakeholders in PE firms. This proactive data exploration helps in refining models and ensuring the platform's outputs are both accurate and interpretable.
+## 5. Generating Synthetic Data for Development and Testing
 
+Before real data pipelines are fully operational, Alex needs to provide realistic, yet synthetic, data for testing various components like API endpoints, UI dashboards, and initial service logic. This synthetic data must rigorously adhere to the defined Pydantic schemas.
+
+```python
+fake = Faker()
+
+def generate_synthetic_company(sector_id: str) -> Company:
+    """Generates a synthetic Company instance."""
+    return Company(
+        name=fake.company(),
+        ticker=fake.bothify(text='???###').upper(),
+        domain=fake.domain_name(),
+        cik=fake.lexify(text='?????????'),
+        sector_id=sector_id,
+        sub_sector_id=fake.word() if fake.boolean(chance_of_getting_true=30) else None,
+        enterprise_value=Decimal(fake.random_int(min=1_000_000, max=10_000_000_000)),
+        ev_currency=fake.currency_code(),
+        ev_as_of_date=fake.date_between(start_date='-2y', end_date='today'),
+        ownership_type=fake.random_element(list(OwnershipType)),
+        fund_id=fake.uuid4() if fake.boolean(chance_of_getting_true=50) else None,
+        status=fake.random_element(list(CompanyStatus)),
+        created_at=fake.date_time_between(start_date='-5y', end_date='-1y'),
+        updated_at=fake.date_time_between(start_date='-1y', end_date='now')
+    )
+
+def generate_synthetic_dimension_score_input(company_id: str) -> DimensionScoreInput:
+    """Generates a synthetic DimensionScoreInput instance."""
+    return DimensionScoreInput(
+        dimension=fake.random_element(list(DimensionName)),
+        score=Decimal(fake.pyfloat(min_value=0, max_value=100, right_digits=2)),
+        confidence_level=fake.random_element(["high", "medium", "low"]),
+        rationale=fake.sentence(nb_words=10) if fake.boolean(chance_of_getting_true=70) else None,
+        evidence_chunk_ids=[fake.uuid4() for _ in range(fake.random_int(min=0, max=3))]
+    )
+
+def generate_synthetic_sector_calibration(sector_id: str, sector_name: str) -> SectorCalibration:
+    """Generates a synthetic SectorCalibration instance."""
+    # Ensure weights sum to 1.0 (distribute 1.0 across dimensions)
+    weights_values = [Decimal(fake.pyfloat(min_value=0.01, max_value=0.30, right_digits=2)) for _ in DimensionName]
+    total_raw_weights = sum(weights_values)
+    normalized_weights = {
+        dim: (val / total_raw_weights).quantize(Decimal("0.01")) for dim, val in zip(DimensionName, weights_values)
+    }
+    # Adjust last weight to ensure sum is exactly 1.0 due to rounding
+    current_sum = sum(normalized_weights.values())
+    if current_sum != Decimal("1.0"):
+        last_dim = list(DimensionName)[-1]
+        normalized_weights[last_dim] += (Decimal("1.0") - current_sum)
+        normalized_weights[last_dim] = normalized_weights[last_dim].quantize(Decimal("0.01"))
+        if normalized_weights[last_dim] < Decimal("0.01"): # Prevent negative or too small weights
+            normalized_weights[last_dim] = Decimal("0.01") # Set a minimum
+            # Re-normalize if necessary, simple approach for demo
+            # In a real system, a more robust normalization would be used.
+            # For this demo, assuming the initial distribution allows for adjustment.
+
+    return SectorCalibration(
+        sector_id=sector_id,
+        sector_name=sector_name,
+        h_r_baseline=Decimal(fake.pyfloat(min_value=50, max_value=90, right_digits=2)),
+        h_r_ci_lower=Decimal(fake.pyfloat(min_value=45, max_value=80, right_digits=2)) if fake.boolean(chance_of_getting_true=70) else None,
+        h_r_ci_upper=Decimal(fake.pyfloat(min_value=60, max_value=95, right_digits=2)) if fake.boolean(chance_of_getting_true=70) else None,
+        weights=normalized_weights,
+        targets={dim: Decimal(fake.pyfloat(min_value=60, max_value=85, right_digits=2)) for dim in DimensionName},
+        effective_date=fake.date_between(start_date='-1y', end_date='today')
+    )
+
+# Generate and display example synthetic data
+print("--- Generating Synthetic Data ---")
+
+# Synthetic Company
+synth_company = generate_synthetic_company(sector_id="software_dev")
+print(f"\nSynthetic Company:\n{synth_company.model_dump_json(indent=2)}")
+
+# Synthetic DimensionScoreInput
+synth_score_input = generate_synthetic_dimension_score_input(company_id=synth_company.company_id)
+print(f"\nSynthetic DimensionScoreInput:\n{synth_score_input.model_dump_json(indent=2)}")
+
+# Synthetic SectorCalibration
+synth_sector_calibration = generate_synthetic_sector_calibration(sector_id="software_dev", sector_name="Software Development")
+print(f"\nSynthetic SectorCalibration:\n{synth_sector_calibration.model_dump_json(indent=2)}")
+```
+
+### Explanation of Execution
+Alex has successfully generated structured synthetic data that strictly conforms to the defined Pydantic schemas. This synthetic data provides a critical resource for various downstream activities, such as:
+- **API Development:** Developers can use this data to mock API responses or populate request bodies during endpoint testing, preventing "broken initial scaffolding."
+- **UI Prototyping:** Frontend engineers can use these JSON structures to build and test UI components (e.g., in Streamlit), allowing them to visualize how company profiles and AI readiness scores would appear without needing a fully functional backend.
+- **Early Stage Feature Development:** Data engineers can use this data to test initial data processing pipelines or database interactions.
+
+By having readily available, schema-validated synthetic data, Alex ensures that development can proceed quickly and efficiently, preventing "prototype purgatory" and accelerating the path to an operational MVP.
