@@ -1,2 +1,14 @@
-
-streamlit==1.24.0
+numpy
+pandas
+matplotlib
+scikit-learn
+streamlit
+pytest
+scipy
+seaborn
+plotly
+requests
+-q
+pydantic~=2.0
+faker~=20.0
+python-dotenv~=1.0
