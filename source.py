@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 from faker import Faker
 # Function to create directories safely
 
+
 def create_project_structure(base_path: str = "src/pe_orgair"):
     """
     Creates the foundational directory structure for the PE Org-AI-R Platform monorepo.
@@ -67,6 +68,7 @@ def create_project_structure(base_path: str = "src/pe_orgair"):
 
     print("\nProject structure created successfully.")
 
+
 # Execute the function to create the structure
 project_root = "src/pe_orgair"
 if os.path.exists("src"):  # Clean up previous run for idempotency
@@ -78,6 +80,8 @@ print("\nVerifying key directories:")
 print(f"Schema dir exists: {os.path.exists(f'{project_root}/schemas/v1')}")
 print(f"API routes dir exists: {os.path.exists(f'{project_root}/api/routes')}")
 # Enums
+
+
 class CompanyStatus(str, Enum):
     """Possible statuses for a company."""
     ACTIVE = "active"
@@ -85,12 +89,14 @@ class CompanyStatus(str, Enum):
     ACQUIRED = "acquired"
     EXITED = "exited"
 
+
 class OwnershipType(str, Enum):
     """Types of ownership for a company."""
     PORTFOLIO = "portfolio"
     TARGET = "target"
     EXITED = "exited"
     BENCHMARK = "benchmark"
+
 
 class DimensionName(str, Enum):
     """Seven validated dimensions of AI readiness."""
@@ -101,6 +107,7 @@ class DimensionName(str, Enum):
     LEADERSHIP = "leadership"
     USE_CASE_PORTFOLIO = "use_case_portfolio"
     CULTURE = "culture"
+
 
 # Default dimension weights (can be overridden by sector)
 DEFAULT_WEIGHTS: Dict[DimensionName, Decimal] = {
@@ -114,6 +121,8 @@ DEFAULT_WEIGHTS: Dict[DimensionName, Decimal] = {
 }
 
 # Company-related schemas
+
+
 class CompanyBase(BaseModel):
     """Base company model, defining common fields."""
     name: str = Field(..., min_length=1, max_length=200)
@@ -123,6 +132,7 @@ class CompanyBase(BaseModel):
     sector_id: str = Field(..., description="Reference to sector calibration")
     sub_sector_id: Optional[str] = None
 
+
 class CompanyCreate(CompanyBase):
     """Schema for creating a company, including optional initial financial details."""
     enterprise_value: Optional[Decimal] = Field(None, ge=0)
@@ -130,6 +140,7 @@ class CompanyCreate(CompanyBase):
     ev_as_of_date: Optional[date] = None
     ownership_type: OwnershipType = OwnershipType.TARGET
     fund_id: Optional[str] = None
+
 
 class Company(CompanyBase):
     """Full company model with all fields, including system-generated ones."""
@@ -146,6 +157,7 @@ class Company(CompanyBase):
     class Config:
         from_attributes = True
 
+
 class CompanyDetail(Company):
     """Company with related data for detail view."""
     sector_name: Optional[str] = None
@@ -155,6 +167,8 @@ class CompanyDetail(Company):
     job_signal_count: int = 0
 
 # Dimension and scoring schemas
+
+
 class DimensionScoreInput(BaseModel):
     """Input for a single dimension score, subject to validation."""
     dimension: DimensionName
@@ -167,8 +181,10 @@ class DimensionScoreInput(BaseModel):
     @classmethod
     def round_score(cls, values):
         if isinstance(values, dict) and 'score' in values and isinstance(values['score'], (float, Decimal)):
-            values['score'] = Decimal(values['score']).quantize(Decimal("0.01"))
+            values['score'] = Decimal(
+                values['score']).quantize(Decimal("0.01"))
         return values
+
 
 class DimensionScoreResult(BaseModel):
     """Stored dimension score with metadata for historical tracking."""
@@ -185,26 +201,34 @@ class DimensionScoreResult(BaseModel):
     evidence_count: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class SectorCalibration(BaseModel):
     """Sector calibration including H^R and dimension weights."""
     sector_id: str
     sector_name: str
-    h_r_baseline: Decimal = Field(..., ge=0, le=100, description="Systematic Opportunity (H^R) baseline score")
-    h_r_ci_lower: Optional[Decimal] = Field(None, ge=0, le=100, description="Lower bound of H^R CI")
-    h_r_ci_upper: Optional[Decimal] = Field(None, ge=0, le=100, description="Upper bound of H^R CI")
-    weights: Dict[DimensionName, Decimal] = Field(..., description="Weights for each dimension, must sum to 1.0")
-    targets: Dict[DimensionName, Decimal] = Field(..., description="Sector targets (benchmarks)")
+    h_r_baseline: Decimal = Field(..., ge=0, le=100,
+                                  description="Systematic Opportunity (H^R) baseline score")
+    h_r_ci_lower: Optional[Decimal] = Field(
+        None, ge=0, le=100, description="Lower bound of H^R CI")
+    h_r_ci_upper: Optional[Decimal] = Field(
+        None, ge=0, le=100, description="Upper bound of H^R CI")
+    weights: Dict[DimensionName, Decimal] = Field(
+        ..., description="Weights for each dimension, must sum to 1.0")
+    targets: Dict[DimensionName,
+                  Decimal] = Field(..., description="Sector targets (benchmarks)")
     effective_date: date
 
     @model_validator(mode='after')
     def validate_weights_sum(self) -> 'SectorCalibration':
         total_weights = sum(self.weights.values())
         if abs(total_weights - Decimal("1.0")) > Decimal("0.001"):
-            raise ValueError(f"Dimension weights must sum to 1.0, got {total_weights}")
+            raise ValueError(
+                f"Dimension weights must sum to 1.0, got {total_weights}")
         return self
 
     class Config:
         from_attributes = True
+
 
 print("Pydantic models for PE Org-AI-R Platform defined.")
 print("\nDEFAULT_WEIGHTS for dimensions:")
@@ -220,7 +244,8 @@ valid_score_input = DimensionScoreInput(
     rationale="Strong data pipeline and governance policies observed.",
     evidence_chunk_ids=["ev_id_001", "ev_id_002"],
 )
-print(f"\nSuccessfully created valid DimensionScoreInput:\n{valid_score_input.model_dump_json(indent=2)}")
+print(
+    f"\nSuccessfully created valid DimensionScoreInput:\n{valid_score_input.model_dump_json(indent=2)}")
 
 # Example 2: Valid CompanyCreate
 valid_company_create = CompanyCreate(
@@ -233,7 +258,8 @@ valid_company_create = CompanyCreate(
     ev_as_of_date=date(2023, 11, 15),
     ownership_type=OwnershipType.TARGET,
 )
-print(f"\nSuccessfully created valid CompanyCreate:\n{valid_company_create.model_dump_json(indent=2)}")
+print(
+    f"\nSuccessfully created valid CompanyCreate:\n{valid_company_create.model_dump_json(indent=2)}")
 
 # Example 3: Valid SectorCalibration with DEFAULT_WEIGHTS
 valid_sector_calibration = SectorCalibration(
@@ -246,7 +272,8 @@ valid_sector_calibration = SectorCalibration(
     targets={dim: Decimal("75.0") for dim in DimensionName},
     effective_date=date(2024, 1, 1),
 )
-print(f"\nSuccessfully created valid SectorCalibration:\n{valid_sector_calibration.model_dump_json(indent=2)}")
+print(
+    f"\nSuccessfully created valid SectorCalibration:\n{valid_sector_calibration.model_dump_json(indent=2)}")
 print("\n--- Demonstrating Validation Errors ---")
 
 # Invalid DimensionScoreInput: Score out of bounds
@@ -268,7 +295,8 @@ try:
         confidence_level="very_high",  # Invalid: not in allowed set
     )
 except ValidationError as e:
-    print(f"\nCaught expected ValidationError for invalid confidence_level:\n{e}")
+    print(
+        f"\nCaught expected ValidationError for invalid confidence_level:\n{e}")
     # Pydantic v2 literal error messages are more direct
     assert "Input should be 'high', 'medium' or 'low'" in str(e)
 
@@ -334,7 +362,8 @@ def generate_synthetic_company(sector_id: str) -> Company:
         cik=fake.lexify(text='?????????'),
         sector_id=sector_id,
         sub_sector_id=fake.word() if fake.boolean(chance_of_getting_true=30) else None,
-        enterprise_value=Decimal(fake.random_int(min=1_000_000, max=10_000_000_000)),
+        enterprise_value=Decimal(fake.random_int(
+            min=1_000_000, max=10_000_000_000)),
         ev_currency=fake.currency_code(),
         ev_as_of_date=fake.date_between(start_date='-2y', end_date='today'),
         ownership_type=fake.random_element(list(OwnershipType)),
@@ -349,10 +378,13 @@ def generate_synthetic_dimension_score_input(company_id: str) -> DimensionScoreI
     """Generates a synthetic DimensionScoreInput instance."""
     return DimensionScoreInput(
         dimension=fake.random_element(list(DimensionName)),
-        score=Decimal(str(fake.pyfloat(min_value=0, max_value=100, right_digits=2))),
+        score=Decimal(
+            str(fake.pyfloat(min_value=0, max_value=100, right_digits=2))),
         confidence_level=fake.random_element(["high", "medium", "low"]),
-        rationale=fake.sentence(nb_words=10) if fake.boolean(chance_of_getting_true=70) else None,
-        evidence_chunk_ids=[fake.uuid4() for _ in range(fake.random_int(min=0, max=3))],
+        rationale=fake.sentence(nb_words=10) if fake.boolean(
+            chance_of_getting_true=70) else None,
+        evidence_chunk_ids=[fake.uuid4()
+                            for _ in range(fake.random_int(min=0, max=3))],
     )
 
 
@@ -361,7 +393,8 @@ def generate_synthetic_sector_calibration(sector_id: str, sector_name: str) -> S
     dims = list(DimensionName)
     n = len(dims)
     # Create positive random raw weights
-    raw = [Decimal(str(fake.pyfloat(min_value=0.1, max_value=1.0, right_digits=6))) for _ in range(n)]
+    raw = [Decimal(str(fake.pyfloat(min_value=0.1, max_value=1.0, right_digits=6)))
+           for _ in range(n)]
     total = sum(raw)
     normalized = [w / total for w in raw]
     # Force exact sum to 1.0 by adjusting the last value
@@ -373,13 +406,18 @@ def generate_synthetic_sector_calibration(sector_id: str, sector_name: str) -> S
     return SectorCalibration(
         sector_id=sector_id,
         sector_name=sector_name,
-        h_r_baseline=Decimal(str(fake.pyfloat(min_value=50, max_value=90, right_digits=2))),
-        h_r_ci_lower=Decimal(str(fake.pyfloat(min_value=45, max_value=80, right_digits=2))) if fake.boolean(chance_of_getting_true=70) else None,
-        h_r_ci_upper=Decimal(str(fake.pyfloat(min_value=60, max_value=95, right_digits=2))) if fake.boolean(chance_of_getting_true=70) else None,
+        h_r_baseline=Decimal(
+            str(fake.pyfloat(min_value=50, max_value=90, right_digits=2))),
+        h_r_ci_lower=Decimal(str(fake.pyfloat(min_value=45, max_value=80, right_digits=2))) if fake.boolean(
+            chance_of_getting_true=70) else None,
+        h_r_ci_upper=Decimal(str(fake.pyfloat(min_value=60, max_value=95, right_digits=2))) if fake.boolean(
+            chance_of_getting_true=70) else None,
         weights=weights,
-        targets={dim: Decimal(str(fake.pyfloat(min_value=60, max_value=85, right_digits=2))) for dim in dims},
+        targets={dim: Decimal(
+            str(fake.pyfloat(min_value=60, max_value=85, right_digits=2))) for dim in dims},
         effective_date=fake.date_between(start_date='-1y', end_date='today'),
     )
+
 
 # Generate and display example synthetic data
 print("--- Generating Synthetic Data ---")
@@ -389,9 +427,13 @@ synth_company = generate_synthetic_company(sector_id="software_dev")
 print(f"\nSynthetic Company:\n{synth_company.model_dump_json(indent=2)}")
 
 # Synthetic DimensionScoreInput
-synth_score_input = generate_synthetic_dimension_score_input(company_id=synth_company.company_id)
-print(f"\nSynthetic DimensionScoreInput:\n{synth_score_input.model_dump_json(indent=2)}")
+synth_score_input = generate_synthetic_dimension_score_input(
+    company_id=synth_company.company_id)
+print(
+    f"\nSynthetic DimensionScoreInput:\n{synth_score_input.model_dump_json(indent=2)}")
 
 # Synthetic SectorCalibration
-synth_sector_calibration = generate_synthetic_sector_calibration(sector_id="software_dev", sector_name="Software Development")
-print(f"\nSynthetic SectorCalibration:\n{synth_sector_calibration.model_dump_json(indent=2)}")
+synth_sector_calibration = generate_synthetic_sector_calibration(
+    sector_id="software_dev", sector_name="Software Development")
+print(
+    f"\nSynthetic SectorCalibration:\n{synth_sector_calibration.model_dump_json(indent=2)}")
